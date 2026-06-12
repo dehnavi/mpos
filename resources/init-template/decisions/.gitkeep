@@ -1,0 +1,7 @@
+<!--
+This directory holds Decision records / ADRs (ADR-NNN-*.md).
+Create new decisions with: mpos decision create "<title>"
+See .mpos/templates/decision.md and .mpos/examples/sample-decision.md.
+A superseded ADR is kept (status: superseded) and linked from its replacement — never
+delete a decision record.
+-->

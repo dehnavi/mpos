@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "my-project",
+    "description": "",
+    "created_at": "2026-06-12"
+  },
+  "ide": {
+    "default_port": 4317,
+    "host": "localhost",
+    "auto_open_browser": true
+  },
+  "git": {
+    "enabled": true,
+    "auto_commit": false,
+    "commit_prefix": "mpos:",
+    "default_branch": "main",
+    "tag_on_milestone": false
+  },
+  "paths": {
+    "docs": "docs",
+    "planning": "planning",
+    "tasks": "tasks",
+    "decisions": "decisions",
+    "changes": "changes",
+    "templates": ".mpos/templates",
+    "rules": ".mpos/rules",
+    "examples": ".mpos/examples",
+    "tutorials": "tutorials"
+  },
+  "counters": {
+    "epic": 0,
+    "story": 0,
+    "task": 0,
+    "sprint": 0,
+    "decision": 0,
+    "change_request": 0,
+    "change_report": 0
+  },
+  "validation": {
+    "require_frontmatter": true,
+    "require_owner": false,
+    "fail_on_broken_links": true,
+    "fail_on_duplicate_ids": true
+  }
+}

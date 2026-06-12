@@ -1,0 +1,5 @@
+<!--
+This directory holds Epic documents (EPIC-NNN-*.md).
+Create new epics with: mpos plan epic create "<title>"
+See .mpos/templates/epic.md and .mpos/examples/sample-epic.md.
+-->

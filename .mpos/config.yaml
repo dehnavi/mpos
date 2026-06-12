@@ -1,0 +1,29 @@
+project:
+  name: My Project
+  description: A product built with MPOS
+  version: 0.1.0
+  created_at: '2026-01-01'
+
+git:
+  auto_commit: false
+  auto_tag: false
+  commit_prefix: 'docs(mpos)'
+  default_branch: main
+
+docs:
+  auto_version: true
+  require_confirmation_for_risky_updates: true
+  dry_run: false
+
+ai:
+  provider: null
+  model: null
+  enabled: false
+
+paths:
+  docs: docs
+  planning: planning
+  tasks: tasks
+  decisions: decisions
+  changes: changes
+  templates: .mpos/templates

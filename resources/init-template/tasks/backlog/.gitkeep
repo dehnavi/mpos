@@ -1,0 +1,6 @@
+<!--
+Tasks with status: backlog live here. Create with: mpos task create "<title>" --story <STORY-ID>
+Move between statuses with: mpos task move <TASK-ID> <backlog|active|blocked|done>
+The task's frontmatter `status` must always match this directory name — see
+.mpos/rules/planning-rules.md.
+-->

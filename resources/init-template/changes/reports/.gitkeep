@@ -1,0 +1,6 @@
+<!--
+This directory holds Change Reports (CHG-NNN-*.md), generated AFTER a change is
+applied. Create with: mpos change report --request <CR-ID>
+See .mpos/templates/change-report.md and .mpos/examples/sample-change-report.md.
+These files are generated — do not hand-edit after creation.
+-->

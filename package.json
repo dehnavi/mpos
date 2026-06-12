@@ -1,0 +1,53 @@
+{
+  "name": "mpos",
+  "version": "1.0.0",
+  "description": "Markdown Project Operating System — local-first documentation and planning agent",
+  "main": "dist/index.js",
+  "bin": {
+    "mpos": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts",
+    "start": "node dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "markdown",
+    "project-management",
+    "documentation",
+    "cli",
+    "planning"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.0.0",
+    "date-fns": "^2.30.0",
+    "diff": "^5.1.0",
+    "express": "^5.2.1",
+    "fs-extra": "^11.1.1",
+    "glob": "^10.3.10",
+    "gray-matter": "^4.0.3",
+    "inquirer": "^8.2.6",
+    "js-yaml": "^4.1.0",
+    "marked": "^18.0.5",
+    "simple-git": "^3.20.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/diff": "^5.0.9",
+    "@types/express": "^5.0.6",
+    "@types/fs-extra": "^11.0.3",
+    "@types/inquirer": "^8.2.10",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.8.0",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.8"
+  }
+}

@@ -1,0 +1,5 @@
+<!--
+This directory holds Change Requests (CR-NNN-*.md), created BEFORE a significant
+change is made. Create with: mpos change request "<title>"
+See .mpos/templates/change-request.md.
+-->

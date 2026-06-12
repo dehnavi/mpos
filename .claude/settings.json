@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm --version)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(npm list *)",
+      "Bash(tasklist.exe)",
+      "Bash(echo \"DONE: $?\")",
+      "Bash(npm run *)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" --help)",
+      "Bash(mkdir -p \"/tmp/mpos-test\")",
+      "Read(//tmp/**)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" init --name \"ConstructionPM\" --description \"Construction project management platform\")",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" ingest \"We are building a B2B SaaS platform for construction project management. Contractors can track materials, timelines, and subcontractors. Users must verify their email before accessing any project data. The system must support multi-tenant architecture.\")",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" plan phases)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" plan sprint --phase phase-01 --count 2)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" tasks generate --sprint sprint-001)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" status)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" analyze drift --verbose)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" diff)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" ingest \"The payment system must support Stripe and PayPal. Users cannot have more than 5 active projects on the free tier. We assume all contractors have smartphones.\")",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" report changes)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" tasks list --sprint sprint-001)",
+      "Bash(node \"/d/Technical Documnet Round Runner/dist/index.js\" analyze health)"
+    ]
+  }
+}

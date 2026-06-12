@@ -1,0 +1,5 @@
+<!--
+Tasks with status: active live here. Move a task here with: mpos task move <TASK-ID> active
+The task's frontmatter `status` must always match this directory name — see
+.mpos/rules/planning-rules.md.
+-->

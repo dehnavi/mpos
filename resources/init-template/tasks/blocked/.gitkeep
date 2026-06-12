@@ -1,0 +1,5 @@
+<!--
+Tasks with status: blocked live here. Move a task here with: mpos task move <TASK-ID> blocked
+Add a **[RISK]** or **[OPEN_QUESTION]** note in the task explaining what unblocks it —
+see .mpos/rules/planning-rules.md.
+-->

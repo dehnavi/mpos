@@ -1,0 +1,5 @@
+<!--
+This directory holds Sprint documents (SPRINT-NNN-*.md).
+Create new sprints with: mpos sprint create "<title>"
+See .mpos/templates/sprint.md and .mpos/examples/sample-sprint.md.
+-->

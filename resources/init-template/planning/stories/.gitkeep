@@ -1,0 +1,5 @@
+<!--
+This directory holds Story documents (STORY-NNN-*.md).
+Create new stories with: mpos plan story create "<title>" --epic <EPIC-ID>
+See .mpos/templates/story.md and .mpos/examples/sample-story.md.
+-->

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MPOS IDE</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header id="app-header">
+    <button id="sidebar-toggle" class="icon-btn active" title="Toggle file tree" aria-label="Toggle file tree" aria-pressed="true"></button>
+    <div id="project-name">MPOS</div>
+    <div id="health-pill" class="pill" title="Workspace validation summary"></div>
+
+    <div id="header-search">
+      <input id="search-box" type="search" placeholder="Search documents, markers, and text..." aria-label="Search documents" />
+      <div id="search-results"></div>
+    </div>
+
+    <button id="panel-toggle" class="icon-btn active" title="Toggle details panel" aria-label="Toggle details panel" aria-pressed="true"></button>
+  </header>
+
+  <div id="app-body">
+    <aside id="sidebar" aria-label="Project files">
+      <div id="tree-filter">
+        <input id="tree-filter-input" type="search" placeholder="Filter files by name, id, or status..." aria-label="Filter files" />
+      </div>
+      <nav id="tree"></nav>
+      <div id="sidebar-footer">
+        <a href="#" id="tutorials-link">Tutorials &amp; onboarding</a>
+      </div>
+    </aside>
+    <div id="sidebar-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize file tree"></div>
+
+    <main id="main">
+      <div id="doc-empty">
+        <h2>Welcome to the MPOS IDE</h2>
+        <p>Select a document from the file tree on the left to read or edit it. Documents are organized the same way as the project's folders: <code>docs/</code>, <code>planning/</code>, <code>tasks/</code>, <code>decisions/</code>, <code>changes/</code>, and <code>tutorials/</code>.</p>
+        <p>New to MPOS? <button class="link-btn" id="open-getting-started">Open the Getting Started tutorial</button>.</p>
+      </div>
+
+      <div id="doc-view" class="hidden">
+        <div id="doc-toolbar">
+          <div id="doc-title-group">
+            <span id="doc-title"></span>
+            <span id="doc-id-badge" class="badge"></span>
+            <span id="doc-type-badge" class="badge"></span>
+            <select id="status-select" class="hidden" aria-label="Document status"></select>
+            <span id="status-badge" class="badge hidden"></span>
+            <span id="unsaved-indicator" class="hidden" title="You have unsaved section edits">&#9679; Unsaved changes</span>
+          </div>
+          <div id="view-mode-group" role="group" aria-label="View mode">
+            <button class="mode-btn active" data-mode="edit" aria-pressed="true">Edit</button>
+            <button class="mode-btn" data-mode="preview" aria-pressed="false">Preview</button>
+            <button class="mode-btn" data-mode="split" aria-pressed="false">Split</button>
+          </div>
+        </div>
+
+        <div id="doc-outline"></div>
+        <div id="doc-banner" class="hidden" role="alert"></div>
+
+        <div id="doc-content" class="mode-edit">
+          <div id="doc-edit-pane">
+            <div id="sections"></div>
+          </div>
+          <div id="doc-preview-pane" class="hidden">
+            <div id="preview-html" class="preview-html"></div>
+          </div>
+        </div>
+
+        <div id="status-bar">
+          <span id="status-bar-msg">Ready.</span>
+          <span id="status-bar-path"></span>
+        </div>
+      </div>
+    </main>
+
+    <div id="panel-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize details panel"></div>
+    <aside id="side-panel" aria-label="Document details">
+      <div id="panel-tabs" role="tablist">
+        <button class="panel-tab active" data-tab="metadata" role="tab" aria-selected="true">Metadata</button>
+        <button class="panel-tab" data-tab="related" role="tab" aria-selected="false">Related</button>
+        <button class="panel-tab" data-tab="markers" role="tab" aria-selected="false">Markers</button>
+        <button class="panel-tab" data-tab="validation" role="tab" aria-selected="false">Validation</button>
+        <button class="panel-tab" data-tab="changes" role="tab" aria-selected="false">Changes</button>
+      </div>
+      <div id="panel-content" role="tabpanel"></div>
+    </aside>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
