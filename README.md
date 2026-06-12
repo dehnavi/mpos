@@ -1,5 +1,5 @@
 # MPOS — Markdown Project Operating System
-![MPOS Banner](./assets/logo.png)
+![MPOS Banner](./assets/banner.png)
 
 MPOS is a **local-first, Git-friendly CLI** for managing a software project's product
 documentation and planning artifacts entirely as structured Markdown files. There is no
