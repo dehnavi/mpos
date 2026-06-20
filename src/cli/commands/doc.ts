@@ -100,14 +100,17 @@ export function registerDoc(program: Command): void {
 async function runDocCreate(typeArg: string, title: string, options: CreateOptions): Promise<void> {
   const root = process.cwd();
   if (!(await configExists(root))) {
-    logger.error('Not an MPOS workspace (missing .mpos/config.json). Run `mpos init`.');
+    logger.error('Not an MPOS workspace (missing .mpos/config.json).');
+    logger.info('Run `mpos init` to create a new workspace, or navigate to an existing one.');
     process.exitCode = 1;
     return;
   }
 
   const spec = CREATE_TYPES[typeArg];
   if (!spec) {
-    logger.error(`Unknown type "${typeArg}". Expected one of: ${Object.keys(CREATE_TYPES).join(', ')}`);
+    logger.error(`Unknown type "${typeArg}".`);
+    logger.info(`Available types: ${Object.keys(CREATE_TYPES).join(', ')}`);
+    logger.info('Example: mpos doc create epic "My New Epic"');
     process.exitCode = 1;
     return;
   }
@@ -121,13 +124,16 @@ async function runDocCreate(typeArg: string, title: string, options: CreateOptio
 
   if (spec.type === DocumentType.Story) {
     if (!options.epic) {
-      logger.error('`doc create story` requires --epic <EPIC-ID>');
+      logger.error('Story requires a parent epic.');
+      logger.info('Usage: mpos doc create story "Title" --epic EPIC-001');
+      logger.info('Use `mpos doc create epic "..."` to create an epic first.');
       process.exitCode = 1;
       return;
     }
     const epicDoc = await repository.findById(options.epic);
     if (!epicDoc) {
       logger.error(`Epic "${options.epic}" not found.`);
+      logger.info('Use `mpos search <query>` to find existing epics.');
       process.exitCode = 1;
       return;
     }
@@ -137,13 +143,16 @@ async function runDocCreate(typeArg: string, title: string, options: CreateOptio
 
   if (spec.type === DocumentType.Task) {
     if (!options.story) {
-      logger.error('`doc create task` requires --story <STORY-ID>');
+      logger.error('Task requires a parent story.');
+      logger.info('Usage: mpos doc create task "Title" --story STORY-001');
+      logger.info('Use `mpos doc create story "..." --epic EPIC-001` to create a story first.');
       process.exitCode = 1;
       return;
     }
     const storyDoc = await repository.findById(options.story);
     if (!storyDoc) {
       logger.error(`Story "${options.story}" not found.`);
+      logger.info('Use `mpos search <query>` to find existing stories.');
       process.exitCode = 1;
       return;
     }
@@ -172,6 +181,7 @@ async function runDocCreate(typeArg: string, title: string, options: CreateOptio
 
   await repository.writeRaw(destPath, rendered);
   logger.success(`Created ${path.relative(root, destPath)} (${id})`);
+  logger.info(`Tip: Use \`mpos doc update --id ${id} --status active\` to change the status.`);
 }
 
 async function runDocUpdate(options: UpdateOptions): Promise<void> {

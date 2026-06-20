@@ -45,7 +45,22 @@ export const ConfigSchema = z.object({
     fail_on_broken_links: z.boolean(),
     fail_on_duplicate_ids: z.boolean(),
   }),
-});
+  ai: z.object({
+    enabled: z.boolean(),
+    provider: z.enum(['ollama', 'lmstudio', 'openai-compatible']),
+    baseUrl: z.string(),
+    model: z.string(),
+    temperature: z.number(),
+    maxTokens: z.number(),
+  }).optional().default({
+    enabled: false,
+    provider: 'ollama',
+    baseUrl: 'http://localhost:11434',
+    model: 'llama3.1',
+    temperature: 0.7,
+    maxTokens: 2048,
+  }),
+}).passthrough();
 
 /**
  * Base frontmatter schema shared by all managed documents, per

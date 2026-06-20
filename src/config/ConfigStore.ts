@@ -51,6 +51,14 @@ export const DEFAULT_CONFIG: MPOSConfig = {
     fail_on_broken_links: true,
     fail_on_duplicate_ids: true,
   },
+  ai: {
+    enabled: false,
+    provider: 'ollama',
+    baseUrl: 'http://localhost:11434',
+    model: 'llama3.1',
+    temperature: 0.7,
+    maxTokens: 2048,
+  },
 };
 
 export function configPath(root: string): string {

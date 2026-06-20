@@ -188,4 +188,12 @@ export interface MPOSConfig {
     fail_on_broken_links: boolean;
     fail_on_duplicate_ids: boolean;
   };
+  ai: {
+    enabled: boolean;
+    provider: 'ollama' | 'lmstudio' | 'openai-compatible';
+    baseUrl: string;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+  };
 }

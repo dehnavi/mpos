@@ -112,10 +112,14 @@ async function runInit(options: InitOptions): Promise<void> {
 
   logger.section('MPOS Initialized');
   console.log('');
-  console.log('Next steps:');
-  console.log('  1. mpos doctor                  — validate the workspace');
-  console.log('  2. mpos doc create epic "..."   — create your first epic');
-  console.log('  3. mpos status                  — check project status');
+  console.log('  Next steps:');
+  console.log('');
+  console.log('    1. mpos doctor                  — validate the workspace');
+  console.log('    2. mpos doc create epic "..."   — create your first epic');
+  console.log('    3. mpos status                  — check project status');
+  console.log('    4. mpos ide                     — open the browser IDE');
+  console.log('');
+  console.log('  Tip: Run mpos --help to see all available commands.');
   console.log('');
 }
 

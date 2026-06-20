@@ -5,6 +5,7 @@ import { registerStatus } from './commands/status';
 import { registerDoc } from './commands/doc';
 import { registerSearch } from './commands/search';
 import { registerIde } from './commands/ide';
+import { registerAi } from './commands/ai';
 import { logger, LogLevel } from '../utils/logger';
 
 export function buildCLI(): Command {
@@ -29,6 +30,7 @@ export function buildCLI(): Command {
   registerDoc(program);
   registerSearch(program);
   registerIde(program);
+  registerAi(program);
 
   // Handle unknown commands
   program.on('command:*', (operands: string[]) => {

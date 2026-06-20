@@ -1,5 +1,5 @@
 {
-  "name": "mpos",
+  "name": "markdownmpos",
   "version": "1.0.0",
   "description": "Markdown Project Operating System — local-first documentation and planning agent",
   "main": "dist/index.js",
@@ -49,5 +49,15 @@
     "ts-node": "^10.9.1",
     "typescript": "^5.2.2",
     "vitest": "^4.1.8"
-  }
+  },
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dehnavi/mpos.git"
+  },
+  "author": "Hossein Dehnavi",
+  "bugs": {
+    "url": "https://github.com/dehnavi/mpos/issues"
+  },
+  "homepage": "https://github.com/dehnavi/mpos#readme"
 }

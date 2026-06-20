@@ -17,7 +17,8 @@ export function registerStatus(program: Command): void {
 async function runStatus(): Promise<void> {
   const root = process.cwd();
   if (!(await configExists(root))) {
-    logger.error('Not an MPOS workspace (missing .mpos/config.json). Run `mpos init`.');
+    logger.error('Not an MPOS workspace (missing .mpos/config.json).');
+    logger.info('Run `mpos init` to create a new workspace, or navigate to an existing one.');
     process.exitCode = 1;
     return;
   }
@@ -41,14 +42,27 @@ async function runStatus(): Promise<void> {
   }
 
   logger.section('Active Sprint');
-  console.log(summary.activeSprint ? `${summary.activeSprint.id} — ${summary.activeSprint.title}` : '(none)');
+  console.log(summary.activeSprint ? `  ${summary.activeSprint.id} — ${summary.activeSprint.title}` : '  (none)');
 
   logger.section('Validation');
-  logger.table([
-    ['critical', String(summary.validation.critical)],
-    ['warning', String(summary.validation.warning)],
-    ['info', String(summary.validation.info)],
-  ]);
+  const crit = summary.validation.critical;
+  const warn = summary.validation.warning;
+  const info = summary.validation.info;
+
+  if (crit === 0 && warn === 0 && info === 0) {
+    console.log('  ✓ All checks passing');
+  } else {
+    logger.table([
+      ['critical', String(crit)],
+      ['warning', String(warn)],
+      ['info', String(info)],
+    ]);
+
+    if (crit > 0) {
+      console.log('');
+      logger.info('Run `mpos doctor` to see detailed validation issues.');
+    }
+  }
 
   logger.section('Git');
   const git = new GitService(root);
@@ -60,7 +74,14 @@ async function runStatus(): Promise<void> {
       ['unstaged', String(gitStatus.unstaged.length)],
       ['untracked', String(gitStatus.untracked.length)],
     ]);
+
+    const totalChanges = gitStatus.staged.length + gitStatus.unstaged.length + gitStatus.untracked.length;
+    if (totalChanges > 0) {
+      console.log('');
+      logger.info(`You have ${totalChanges} uncommitted change(s). Consider committing your work.`);
+    }
   } else {
-    console.log('(not a Git repository)');
+    console.log('  (not a Git repository)');
+    logger.info('Initialize Git with `git init` for version control.');
   }
 }

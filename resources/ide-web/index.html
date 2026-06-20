@@ -8,17 +8,69 @@
 </head>
 <body>
   <header id="app-header">
-    <button id="sidebar-toggle" class="icon-btn active" title="Toggle file tree" aria-label="Toggle file tree" aria-pressed="true"></button>
+    <button id="sidebar-toggle" class="icon-btn active" title="Toggle file tree (Ctrl+B)" aria-label="Toggle file tree" aria-pressed="true"></button>
     <div id="project-name">MPOS</div>
+    <span id="ai-status-pill" class="ai-off" title="AI status"></span>
     <div id="health-pill" class="pill" title="Workspace validation summary"></div>
 
     <div id="header-search">
-      <input id="search-box" type="search" placeholder="Search documents, markers, and text..." aria-label="Search documents" />
+      <input id="search-box" type="search" placeholder="Search... (Ctrl+K)" aria-label="Search documents" />
       <div id="search-results"></div>
     </div>
 
-    <button id="panel-toggle" class="icon-btn active" title="Toggle details panel" aria-label="Toggle details panel" aria-pressed="true"></button>
+    <button id="create-doc-btn" class="btn btn-primary" title="Create new document (Ctrl+N)" aria-label="Create new document">+ New</button>
+    <button id="panel-toggle" class="icon-btn active" title="Toggle details panel (Ctrl+\\)" aria-label="Toggle details panel" aria-pressed="true"></button>
   </header>
+
+  <div id="toast-container" aria-live="polite"></div>
+
+  <div id="command-palette" class="hidden" role="dialog" aria-label="Command palette">
+    <div id="command-palette-backdrop"></div>
+    <div id="command-palette-dialog">
+      <input id="command-palette-input" type="search" placeholder="Type a command..." aria-label="Command search" />
+      <div id="command-palette-list"></div>
+    </div>
+  </div>
+
+  <div id="create-doc-modal" class="hidden" role="dialog" aria-label="Create document">
+    <div id="create-doc-backdrop"></div>
+    <div id="create-doc-dialog">
+      <h3>Create New Document</h3>
+      <div class="form-group">
+        <label for="create-doc-type">Document Type</label>
+        <select id="create-doc-type">
+          <option value="epic">Epic</option>
+          <option value="story">Story</option>
+          <option value="task">Task</option>
+          <option value="sprint">Sprint</option>
+          <option value="decision">Decision (ADR)</option>
+          <option value="change-request">Change Request</option>
+          <option value="change-report">Change Report</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="create-doc-title">Title</label>
+        <input id="create-doc-title" type="text" placeholder="Enter document title..." />
+      </div>
+      <div class="form-group" id="create-doc-parent-group">
+        <label for="create-doc-parent">Parent ID</label>
+        <input id="create-doc-parent" type="text" placeholder="e.g., EPIC-001 or STORY-001" />
+      </div>
+      <div class="form-group">
+        <label for="create-doc-priority">Priority</label>
+        <select id="create-doc-priority">
+          <option value="medium">Medium</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button id="create-doc-cancel" class="btn">Cancel</button>
+        <button id="create-doc-submit" class="btn btn-primary">Create</button>
+      </div>
+    </div>
+  </div>
 
   <div id="app-body">
     <aside id="sidebar" aria-label="Project files">
@@ -28,6 +80,7 @@
       <nav id="tree"></nav>
       <div id="sidebar-footer">
         <a href="#" id="tutorials-link">Tutorials &amp; onboarding</a>
+        <a href="#" id="shortcuts-link">Keyboard shortcuts</a>
       </div>
     </aside>
     <div id="sidebar-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize file tree"></div>
@@ -49,14 +102,20 @@
             <span id="status-badge" class="badge hidden"></span>
             <span id="unsaved-indicator" class="hidden" title="You have unsaved section edits">&#9679; Unsaved changes</span>
           </div>
-          <div id="view-mode-group" role="group" aria-label="View mode">
-            <button class="mode-btn active" data-mode="edit" aria-pressed="true">Edit</button>
-            <button class="mode-btn" data-mode="preview" aria-pressed="false">Preview</button>
-            <button class="mode-btn" data-mode="split" aria-pressed="false">Split</button>
+          <div id="toolbar-actions">
+            <button id="save-all-btn" class="btn btn-primary hidden" title="Save all changes (Ctrl+S)">Save All</button>
+            <div id="view-mode-group" role="group" aria-label="View mode">
+              <button class="mode-btn active" data-mode="edit" aria-pressed="true">Edit</button>
+              <button class="mode-btn" data-mode="preview" aria-pressed="false">Preview</button>
+              <button class="mode-btn" data-mode="split" aria-pressed="false">Split</button>
+            </div>
           </div>
         </div>
 
-        <div id="doc-outline"></div>
+        <div id="doc-outline-wrap">
+          <div id="doc-outline"></div>
+          <div id="outline-resizer" class="resizer-h" role="separator" aria-orientation="horizontal" aria-label="Resize section outline"></div>
+        </div>
         <div id="doc-banner" class="hidden" role="alert"></div>
 
         <div id="doc-content" class="mode-edit">

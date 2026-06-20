@@ -3,7 +3,7 @@ import * as path from 'path';
 import { DocumentRepository, MarkdownDocument } from '../markdown/DocumentRepository';
 import { SectionEditError } from '../markdown/SectionEditor';
 import { applyDocUpdate, ApplyDocUpdateOptions } from '../markdown/applyDocUpdate';
-import { extractMarkers, parseSections } from '../utils/markdownUtils';
+import { extractMarkers, parseSections, todayString } from '../utils/markdownUtils';
 import { renderMarkdownHtml } from './markdownRender';
 import { resolveSafeRelPath, UnsafePathError } from './paths';
 import { searchDocuments } from '../search/searchService';
@@ -11,7 +11,11 @@ import { getStatusSummary } from '../status/statusService';
 import { findDuplicateIds, validateDocument } from '../validation/ValidationEngine';
 import { GitService } from '../git/GitService';
 import { MARKER_NAMES } from '../utils/markdownUtils';
-import { MPOSConfig, STATUS_VALUES } from '../domain/types';
+import { MPOSConfig, STATUS_VALUES, DocumentType, ID_PREFIXES } from '../domain/types';
+import { nextId } from '../config/ConfigStore';
+import { loadTemplate, renderTemplate, stripLeadingComments, TemplateName } from '../templates/TemplateRegistry';
+import { slugify } from '../utils/slugify';
+import { complete, listModels, AICompletionRequest } from '../ai/AIService';
 
 function docToJson(doc: MarkdownDocument) {
   const sections = parseSections(doc.body)
@@ -125,6 +129,126 @@ export function createApiRouter(root: string, config: MPOSConfig): Router {
     } catch (err) {
       handleError(res, err);
     }
+  });
+
+  const CREATE_TYPES: Record<string, { type: DocumentType; template: TemplateName }> = {
+    epic: { type: DocumentType.Epic, template: 'epic' },
+    story: { type: DocumentType.Story, template: 'story' },
+    task: { type: DocumentType.Task, template: 'task' },
+    sprint: { type: DocumentType.Sprint, template: 'sprint' },
+    decision: { type: DocumentType.Decision, template: 'decision' },
+    'change-request': { type: DocumentType.ChangeRequest, template: 'change-request' },
+    'change-report': { type: DocumentType.ChangeReport, template: 'change-report' },
+  };
+
+  router.post('/create-doc', async (req: Request, res: Response) => {
+    try {
+      const { type: typeArg, title, parent } = req.body as { type?: string; title?: string; parent?: string };
+
+      if (!typeArg || !title) {
+        res.status(400).json({ error: 'type and title are required.' });
+        return;
+      }
+
+      const spec = CREATE_TYPES[typeArg];
+      if (!spec) {
+        res.status(400).json({ error: `Unknown type "${typeArg}". Expected one of: ${Object.keys(CREATE_TYPES).join(', ')}` });
+        return;
+      }
+
+      const vars: Record<string, string> = {
+        title,
+        date: todayString(),
+        owner: '',
+      };
+
+      if (spec.type === DocumentType.Story) {
+        if (!parent) {
+          res.status(400).json({ error: 'story requires a parent epic ID.' });
+          return;
+        }
+        const epicDoc = await repository.findById(parent);
+        if (!epicDoc) {
+          res.status(400).json({ error: `Epic "${parent}" not found.` });
+          return;
+        }
+        vars.epic_id = parent;
+        vars.epic_slug = slugify(String(epicDoc.frontmatter.title));
+      }
+
+      if (spec.type === DocumentType.Task) {
+        if (!parent) {
+          res.status(400).json({ error: 'task requires a parent story ID.' });
+          return;
+        }
+        const storyDoc = await repository.findById(parent);
+        if (!storyDoc) {
+          res.status(400).json({ error: `Story "${parent}" not found.` });
+          return;
+        }
+        vars.story_id = parent;
+        vars.story_slug = slugify(String(storyDoc.frontmatter.title));
+        vars.epic_id = String(storyDoc.frontmatter.epic ?? '');
+      }
+
+      const id = await nextId(root, spec.type);
+      vars.id = id;
+
+      const template = await loadTemplate(root, spec.template);
+      const rendered = renderTemplate(stripLeadingComments(template), vars);
+
+      const destPath = repository.resolveNewPath(spec.type, id, title);
+      await repository.writeRaw(destPath, rendered);
+
+      const relPath = path.relative(root, destPath).replace(/\\/g, '/');
+      res.json({ id, path: relPath, title });
+    } catch (err) {
+      handleError(res, err);
+    }
+  });
+
+  router.post('/ai/complete', async (req: Request, res: Response) => {
+    try {
+      if (!config.ai?.enabled) {
+        res.status(400).json({ error: 'AI is not enabled. Set "ai.enabled": true in .mpos/config.json.' });
+        return;
+      }
+
+      const body = req.body as AICompletionRequest;
+      if (!body.prompt) {
+        res.status(400).json({ error: 'prompt is required.' });
+        return;
+      }
+
+      const result = await complete(config, body);
+      res.json(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(502).json({ error: `AI request failed: ${message}` });
+    }
+  });
+
+  router.get('/ai/models', async (_req: Request, res: Response) => {
+    try {
+      if (!config.ai?.enabled) {
+        res.json({ models: [], provider: config.ai?.provider || 'ollama', enabled: false });
+        return;
+      }
+      const result = await listModels(config);
+      res.json({ ...result, enabled: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      res.status(502).json({ error: `Failed to list models: ${message}` });
+    }
+  });
+
+  router.get('/ai/status', (_req: Request, res: Response) => {
+    res.json({
+      enabled: config.ai?.enabled ?? false,
+      provider: config.ai?.provider ?? 'ollama',
+      model: config.ai?.model ?? '',
+      baseUrl: config.ai?.baseUrl ?? '',
+    });
   });
 
   return router;

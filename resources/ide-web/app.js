@@ -12,6 +12,7 @@ const state = {
   treeFilter: '',
   dirtySections: new Set(),
   panelCache: { validation: null, diff: null },
+  ai: { enabled: false, provider: '', model: '', baseUrl: '' },
 };
 
 const TOP_DIR_LABELS = {
@@ -68,6 +69,7 @@ const ICON_PATHS = {
   book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v18H6.5A2.5 2.5 0 0 0 4 22.5z"/><path d="M4 19.5V4.5"/>',
   sidebar: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
   panel: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
+  ai: '<path d="M12 2a7 7 0 0 1 7 7c0 2.5-1.5 4.5-3 5.5V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.5C6.5 13.5 5 11.5 5 9a7 7 0 0 1 7-7z"/><path d="M9 21h6"/><path d="M10 17v4M14 17v4"/>',
 };
 
 function icon(name, size) {
@@ -139,6 +141,23 @@ function setStatus(message, type) {
   if (type === 'success') bar.classList.add('status-success');
 }
 
+// ---------------------------------------------------------------------------
+// Toast notifications
+// ---------------------------------------------------------------------------
+
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('removing');
+    setTimeout(() => toast.remove(), 200);
+  }, duration);
+}
+
 function showBanner(title, message) {
   const banner = document.getElementById('doc-banner');
   banner.innerHTML = `<h4>${escapeHtml(title)}</h4><p>${escapeHtml(message)}</p>`;
@@ -151,6 +170,7 @@ function hideBanner() {
 
 function updateUnsavedIndicator() {
   document.getElementById('unsaved-indicator').classList.toggle('hidden', state.dirtySections.size === 0);
+  document.getElementById('save-all-btn').classList.toggle('hidden', state.dirtySections.size === 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -180,6 +200,31 @@ async function refreshStatus() {
     return status;
   } catch {
     return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI status
+// ---------------------------------------------------------------------------
+
+async function refreshAIStatus() {
+  try {
+    const aiStatus = await api('/ai/status');
+    state.ai = aiStatus;
+    const pill = document.getElementById('ai-status-pill');
+    if (pill) {
+      if (aiStatus.enabled) {
+        pill.className = '';
+        pill.textContent = `AI: ${aiStatus.model}`;
+        pill.title = `Connected to ${aiStatus.provider} — model: ${aiStatus.model}`;
+      } else {
+        pill.className = 'ai-off';
+        pill.textContent = 'AI off';
+        pill.title = 'AI is disabled. Enable it in .mpos/config.json.';
+      }
+    }
+  } catch {
+    state.ai.enabled = false;
   }
 }
 
@@ -437,6 +482,16 @@ function buildSectionBlock(section, index) {
   diffBtn.textContent = 'Preview changes';
   actions.appendChild(diffBtn);
 
+  const aiBtn = document.createElement('button');
+  aiBtn.className = 'btn btn-ai';
+  aiBtn.type = 'button';
+  aiBtn.innerHTML = `${icon('ai', 14)} AI`;
+  aiBtn.title = 'Generate content with AI (Ctrl+G)';
+  if (!state.ai.enabled) {
+    aiBtn.style.display = 'none';
+  }
+  actions.appendChild(aiBtn);
+
   const saveBtn = document.createElement('button');
   saveBtn.className = 'btn btn-primary';
   saveBtn.type = 'button';
@@ -453,6 +508,63 @@ function buildSectionBlock(section, index) {
   textarea.dataset.original = normalized;
   textarea.setAttribute('aria-label', `${section.heading} content`);
   block.appendChild(textarea);
+
+  const aiPromptBar = document.createElement('div');
+  aiPromptBar.className = 'ai-prompt-bar hidden';
+  aiPromptBar.innerHTML = `
+    <input type="text" placeholder="Describe what you want AI to write for this section..." aria-label="AI prompt" />
+    <button class="btn btn-ai" type="button">${icon('ai', 14)} Generate</button>
+    <button class="btn" type="button">Cancel</button>
+  `;
+  block.appendChild(aiPromptBar);
+
+  const aiInput = aiPromptBar.querySelector('input');
+  const aiGenerateBtn = aiPromptBar.querySelectorAll('.btn-ai')[1] || aiPromptBar.querySelector('.btn-ai');
+  const aiCancelBtn = aiPromptBar.querySelectorAll('.btn')[1];
+
+  aiBtn.addEventListener('click', () => {
+    aiPromptBar.classList.toggle('hidden');
+    if (!aiPromptBar.classList.contains('hidden')) {
+      aiInput.focus();
+    }
+  });
+
+  aiCancelBtn.addEventListener('click', () => {
+    aiPromptBar.classList.add('hidden');
+    aiInput.value = '';
+  });
+
+  aiGenerateBtn.addEventListener('click', async () => {
+    const prompt = aiInput.value.trim();
+    if (!prompt) return;
+
+    aiGenerateBtn.disabled = true;
+    aiGenerateBtn.innerHTML = `<span class="ai-spinner"></span> Generating...`;
+
+    try {
+      const docTitle = state.currentDoc?.frontmatter?.title || '';
+      const docType = state.currentDoc?.frontmatter?.type || '';
+      const fullPrompt = `Document: "${docTitle}" (${docType})\nSection: "${section.heading}"\n\nRequest: ${prompt}\n\nCurrent content:\n${textarea.value || '(empty)'}`;
+
+      const result = await api('/ai/complete', {
+        method: 'POST',
+        body: JSON.stringify({
+          prompt: fullPrompt,
+          sectionHeading: section.heading,
+          documentType: docType,
+        }),
+      });
+
+      textarea.value = result.text;
+      textarea.dispatchEvent(new Event('input'));
+      showToast(`AI generated content for "${section.heading}"`, 'success');
+    } catch (err) {
+      showToast(`AI error: ${err.message}`, 'error');
+    } finally {
+      aiGenerateBtn.disabled = false;
+      aiGenerateBtn.innerHTML = `${icon('ai', 14)} Generate`;
+    }
+  });
 
   const diffPane = document.createElement('div');
   diffPane.className = 'section-diff hidden';
@@ -528,6 +640,7 @@ async function saveSection(heading, textarea, saveBtn) {
       body: JSON.stringify({ section: heading, text: textarea.value }),
     });
     onSaveSuccess(updated, heading);
+    showToast(`Saved "${heading}"`, 'success');
     setStatus(`Saved "${heading}".`, 'success');
   } catch (err) {
     saveBtn.disabled = false;
@@ -539,6 +652,7 @@ async function saveSection(heading, textarea, saveBtn) {
     } else {
       showBanner('Save failed', err.message);
     }
+    showToast(`Failed to save "${heading}"`, 'error');
     setStatus('Save failed — your edits are still here.', 'error');
   }
 }
@@ -1013,6 +1127,11 @@ function setupTutorialLinks() {
   };
   document.getElementById('tutorials-link').addEventListener('click', handler);
   document.getElementById('open-getting-started').addEventListener('click', handler);
+
+  document.getElementById('shortcuts-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    showToast('Keyboard shortcuts: Ctrl+S (Save), Ctrl+K (Search), Ctrl+N (New), Ctrl+B (Toggle tree), Ctrl+\\ (Toggle panel)', 'info', 5000);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1080,6 +1199,36 @@ function setupResizers() {
     const next = Math.min(560, Math.max(260, current - dx));
     document.documentElement.style.setProperty('--panel-w', `${next}px`);
   });
+
+  setupHorizontalResizer(document.getElementById('outline-resizer'), (dy) => {
+    const outline = document.getElementById('doc-outline');
+    const current = parseInt(getComputedStyle(outline).maxHeight) || 48;
+    const next = Math.min(400, Math.max(48, current + dy));
+    document.documentElement.style.setProperty('--outline-h', `${next}px`);
+  });
+}
+
+function setupHorizontalResizer(handle, onDelta) {
+  let startY = 0;
+
+  function onMouseMove(e) {
+    const dy = e.clientY - startY;
+    startY = e.clientY;
+    onDelta(dy);
+  }
+  function onMouseUp() {
+    handle.classList.remove('active');
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }
+
+  handle.addEventListener('mousedown', (e) => {
+    startY = e.clientY;
+    handle.classList.add('active');
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    e.preventDefault();
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1093,6 +1242,300 @@ function setupBeforeUnload() {
       e.returnValue = '';
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// Keyboard shortcuts
+// ---------------------------------------------------------------------------
+
+const SHORTCUTS = [
+  { key: 'Ctrl+s', label: 'Save all changes', action: () => saveAllDirtySections() },
+  { key: 'Ctrl+k', label: 'Search documents', action: () => focusSearch() },
+  { key: 'Ctrl+n', label: 'Create new document', action: () => showCreateDocModal() },
+  { key: 'Ctrl+b', label: 'Toggle file tree', action: () => toggleSidebar() },
+  { key: 'Ctrl+\\', label: 'Toggle details panel', action: () => togglePanel() },
+  { key: 'Ctrl+g', label: 'AI generate for section', action: () => toggleAIPromptForActiveSection() },
+  { key: 'Escape', label: 'Close dialogs', action: () => closeAllDialogs() },
+];
+
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    const key = [];
+    if (e.ctrlKey || e.metaKey) key.push('Ctrl');
+    if (e.shiftKey) key.push('Shift');
+    if (e.altKey) key.push('Alt');
+
+    let keyName = e.key.toLowerCase();
+    if (keyName === '\\') keyName = '\\';
+    key.push(keyName);
+
+    const combo = key.join('+');
+
+    for (const shortcut of SHORTCUTS) {
+      if (shortcut.key === combo) {
+        e.preventDefault();
+        shortcut.action();
+        return;
+      }
+    }
+  });
+}
+
+function focusSearch() {
+  const box = document.getElementById('search-box');
+  box.focus();
+  box.select();
+}
+
+function toggleSidebar() {
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  sidebarToggle.click();
+}
+
+function togglePanel() {
+  const panelToggle = document.getElementById('panel-toggle');
+  panelToggle.click();
+}
+
+function closeAllDialogs() {
+  document.getElementById('command-palette').classList.add('hidden');
+  document.getElementById('create-doc-modal').classList.add('hidden');
+  document.getElementById('search-results').innerHTML = '';
+}
+
+function toggleAIPromptForActiveSection() {
+  if (!state.ai.enabled) {
+    showToast('AI is not enabled. Set "ai.enabled": true in .mpos/config.json', 'warning');
+    return;
+  }
+  const firstBlock = document.querySelector('#sections .section-block');
+  if (!firstBlock) return;
+  const aiBar = firstBlock.querySelector('.ai-prompt-bar');
+  if (aiBar) {
+    aiBar.classList.toggle('hidden');
+    if (!aiBar.classList.contains('hidden')) {
+      aiBar.querySelector('input').focus();
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Save all dirty sections
+// ---------------------------------------------------------------------------
+
+async function saveAllDirtySections() {
+  if (state.dirtySections.size === 0) {
+    showToast('No unsaved changes', 'info');
+    return;
+  }
+
+  const headings = [...state.dirtySections];
+  setStatus(`Saving ${headings.length} section(s)...`, 'info');
+
+  let saved = 0;
+  let failed = 0;
+
+  for (const heading of headings) {
+    const block = document.querySelector(`#sections .section-block[data-heading="${escapeAttr(heading)}"]`);
+    if (!block) continue;
+
+    const textarea = block.querySelector('textarea');
+    const saveBtn = block.querySelector('.btn-primary');
+
+    try {
+      await api(`/doc?path=${enc(state.currentPath)}`, {
+        method: 'PUT',
+        body: JSON.stringify({ section: heading, text: textarea.value }),
+      });
+      saved++;
+      updateSectionBlock(heading, { content: textarea.value, markers: [] });
+    } catch {
+      failed++;
+    }
+  }
+
+  if (saved > 0) {
+    showToast(`Saved ${saved} section(s)`, 'success');
+    setStatus(`Saved ${saved} section(s).`, 'success');
+  }
+  if (failed > 0) {
+    showToast(`Failed to save ${failed} section(s)`, 'error');
+    setStatus(`Failed to save ${failed} section(s).`, 'error');
+  }
+
+  state.panelCache = { validation: null, diff: null };
+  renderPreview(state.currentDoc);
+  renderPanel();
+  refreshStatus().then(renderTree);
+}
+
+// ---------------------------------------------------------------------------
+// Command palette
+// ---------------------------------------------------------------------------
+
+const COMMANDS = [
+  { label: 'Create Epic', shortcut: '', action: () => openCreateDocModal('epic') },
+  { label: 'Create Story', shortcut: '', action: () => openCreateDocModal('story') },
+  { label: 'Create Task', shortcut: '', action: () => openCreateDocModal('task') },
+  { label: 'Create Sprint', shortcut: '', action: () => openCreateDocModal('sprint') },
+  { label: 'Create Decision', shortcut: '', action: () => openCreateDocModal('decision') },
+  { label: 'Toggle File Tree', shortcut: 'Ctrl+B', action: () => toggleSidebar() },
+  { label: 'Toggle Details Panel', shortcut: 'Ctrl+\\', action: () => togglePanel() },
+  { label: 'Save All Changes', shortcut: 'Ctrl+S', action: () => saveAllDirtySections() },
+  { label: 'AI Generate Section', shortcut: 'Ctrl+G', action: () => toggleAIPromptForActiveSection() },
+  { label: 'Open Tutorials', shortcut: '', action: () => { const t = findTutorialStart(); if (t) openDoc(t.path); } },
+];
+
+function setupCommandPalette() {
+  const palette = document.getElementById('command-palette');
+  const input = document.getElementById('command-palette-input');
+  const list = document.getElementById('command-palette-list');
+  const backdrop = document.getElementById('command-palette-backdrop');
+  let selected = 0;
+
+  function open() {
+    palette.classList.remove('hidden');
+    input.value = '';
+    selected = 0;
+    renderCommands();
+    input.focus();
+  }
+
+  function close() {
+    palette.classList.add('hidden');
+  }
+
+  function renderCommands() {
+    const q = input.value.toLowerCase();
+    const filtered = COMMANDS.filter((c) => c.label.toLowerCase().includes(q));
+    list.innerHTML = '';
+
+    filtered.forEach((cmd, i) => {
+      const btn = document.createElement('button');
+      btn.className = `cmd-item${i === selected ? ' selected' : ''}`;
+      btn.innerHTML = `
+        <span class="cmd-label">${escapeHtml(cmd.label)}</span>
+        ${cmd.shortcut ? `<span class="cmd-shortcut">${escapeHtml(cmd.shortcut)}</span>` : ''}
+      `;
+      btn.addEventListener('click', () => { close(); cmd.action(); });
+      list.appendChild(btn);
+    });
+  }
+
+  input.addEventListener('input', () => { selected = 0; renderCommands(); });
+
+  input.addEventListener('keydown', (e) => {
+    const items = list.querySelectorAll('.cmd-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selected = Math.min(selected + 1, items.length - 1);
+      items.forEach((el, i) => el.classList.toggle('selected', i === selected));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selected = Math.max(selected - 1, 0);
+      items.forEach((el, i) => el.classList.toggle('selected', i === selected));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (items[selected]) items[selected].click();
+    }
+  });
+
+  backdrop.addEventListener('click', close);
+
+  window._openCommandPalette = open;
+}
+
+// ---------------------------------------------------------------------------
+// Create document modal
+// ---------------------------------------------------------------------------
+
+function setupCreateDocModal() {
+  const modal = document.getElementById('create-doc-modal');
+  const backdrop = document.getElementById('create-doc-backdrop');
+  const typeSelect = document.getElementById('create-doc-type');
+  const titleInput = document.getElementById('create-doc-title');
+  const parentInput = document.getElementById('create-doc-parent');
+  const parentGroup = document.getElementById('create-doc-parent-group');
+  const cancelBtn = document.getElementById('create-doc-cancel');
+  const submitBtn = document.getElementById('create-doc-submit');
+
+  function open(type) {
+    modal.classList.remove('hidden');
+    typeSelect.value = type || 'epic';
+    titleInput.value = '';
+    parentInput.value = '';
+    updateParentField();
+    titleInput.focus();
+  }
+
+  function close() {
+    modal.classList.add('hidden');
+  }
+
+  function updateParentField() {
+    const type = typeSelect.value;
+    const needsParent = type === 'story' || type === 'task';
+    parentGroup.classList.toggle('hidden', !needsParent);
+    parentInput.placeholder = type === 'story' ? 'e.g., EPIC-001' : 'e.g., STORY-001';
+  }
+
+  typeSelect.addEventListener('change', updateParentField);
+  backdrop.addEventListener('click', close);
+  cancelBtn.addEventListener('click', close);
+
+  submitBtn.addEventListener('click', async () => {
+    const type = typeSelect.value;
+    const title = titleInput.value.trim();
+    if (!title) {
+      showToast('Title is required', 'error');
+      return;
+    }
+
+    const needsParent = type === 'story' || type === 'task';
+    const parentId = parentInput.value.trim();
+
+    if (needsParent && !parentId) {
+      showToast(`${type === 'story' ? 'Epic' : 'Story'} ID is required for ${type}`, 'error');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
+
+    try {
+      const args = [`doc`, `create`, type, `"${title}"`];
+      if (type === 'story' && parentId) args.push(`--epic`, parentId);
+      if (type === 'task' && parentId) args.push(`--story`, parentId);
+
+      setStatus(`Creating ${type}...`, 'info');
+
+      const result = await api('/create-doc', {
+        method: 'POST',
+        body: JSON.stringify({ type, title, parent: parentId || undefined }),
+      });
+
+      showToast(`Created ${type}: ${title}`, 'success');
+      setStatus(`Created ${type}: ${title}`, 'success');
+
+      state.tree = await api('/tree');
+      renderTree();
+
+      if (result.path) {
+        openDoc(result.path);
+      }
+
+      close();
+    } catch (err) {
+      showToast(`Failed to create ${type}: ${err.message}`, 'error');
+      setStatus(`Failed to create ${type}.`, 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Create';
+    }
+  });
+
+  window.showCreateDocModal = open;
+  window.openCreateDocModal = (type) => open(type);
 }
 
 // ---------------------------------------------------------------------------
@@ -1119,9 +1562,16 @@ async function init() {
   setupCollapseToggles();
   setupTutorialLinks();
   setupBeforeUnload();
+  setupKeyboardShortcuts();
+  setupCommandPalette();
+  setupCreateDocModal();
   document.getElementById('status-select').addEventListener('change', (e) => updateStatus(e.target.value));
 
+  document.getElementById('save-all-btn').addEventListener('click', saveAllDirtySections);
+  document.getElementById('create-doc-btn').addEventListener('click', () => showCreateDocModal());
+
   await refreshStatus();
+  await refreshAIStatus();
   renderTree();
   renderPanel();
 }
